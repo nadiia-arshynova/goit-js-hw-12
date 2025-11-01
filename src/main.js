@@ -1,4 +1,4 @@
-import { getImagesByQuery } from './js/pixabay-api.js';
+import { getImagesByQuery, PER_PAGE } from './js/pixabay-api.js';
 import {
   createGallery,
   clearGallery,
@@ -51,38 +51,19 @@ form.addEventListener('submit', async event => {
     }
 
     createGallery(data.hits);
-    if (data.hits.length < totalHits) { showLoadMoreButton();
-        }
-  } catch (error) {
-    iziToast.error({
-     
-      message: 'Something went wrong. Please try again later.',
-      position: 'topRight',
-    });
-  } finally {
-    hideLoader();
-  }
-});
 
-loadMoreBtn.addEventListener('click', async () => {
-  currentPage++;
-  showLoader();
-
-  try {
-    const data = await getImagesByQuery(currentQuery, currentPage);
-    createGallery(data.hits);
-
-    smoothScroll();
-
-    const totalLoaded = document.querySelectorAll('.gallery-item').length;
-    if (totalLoaded >= totalHits) {
+    if (totalHits <= PER_PAGE) {
       hideLoadMoreButton();
       iziToast.info({
         message: "We're sorry, but you've reached the end of search results.",
         position: 'topRight',
       });
+    } else {
+      
+      showLoadMoreButton();
     }
   } catch (error) {
+    console.error(error);
     iziToast.error({
       
       message: 'Something went wrong. Please try again later.',
@@ -93,9 +74,62 @@ loadMoreBtn.addEventListener('click', async () => {
   }
 });
 
+
+loadMoreBtn.addEventListener('click', async () => {
+  
+  hideLoadMoreButton();
+  loadMoreBtn.disabled = true;
+  showLoader();
+
+  currentPage += 1;
+
+  try {
+    const data = await getImagesByQuery(currentQuery, currentPage);
+
+    if (Array.isArray(data.hits) && data.hits.length > 0) {
+      createGallery(data.hits);
+
+      
+      smoothScroll();
+
+      const totalLoaded = document.querySelectorAll('.gallery-item').length;
+      if (totalLoaded >= totalHits) {
+        hideLoadMoreButton();
+        iziToast.info({
+          message: "We're sorry, but you've reached the end of search results.",
+          position: 'topRight',
+        });
+      } else {
+        
+        showLoadMoreButton();
+      }
+    } else {
+      
+      iziToast.info({
+        message: "We're sorry, but you've reached the end of search results.",
+        position: 'topRight',
+      });
+      hideLoadMoreButton();
+    }
+  } catch (error) {
+    console.error(error);
+    iziToast.error({
+      title: 'Error',
+      message: 'Something went wrong while loading more images.',
+      position: 'topRight',
+    });
+    
+    showLoadMoreButton();
+  } finally {
+    hideLoader();
+    loadMoreBtn.disabled = false;
+  }
+});
+
 function smoothScroll() {
-  const { height: cardHeight } =
-    document.querySelector('.gallery-item').getBoundingClientRect();
+  const firstCard = document.querySelector('.gallery-item');
+  if (!firstCard) return;
+  const { height: cardHeight } = firstCard.getBoundingClientRect();
 
   window.scrollBy({
     top: cardHeight * 2,

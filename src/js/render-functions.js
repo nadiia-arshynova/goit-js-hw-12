@@ -54,9 +54,11 @@ export function hideLoader() {
 }
 
 export function showLoadMoreButton() {
+   if (!loadMoreBtn) return;
   loadMoreBtn.hidden = false;
 }
 
 export function hideLoadMoreButton() {
+  if (!loadMoreBtn) return;
   loadMoreBtn.hidden = true;
 }
